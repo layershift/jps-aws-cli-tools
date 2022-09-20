@@ -1,0 +1,67 @@
+version: 0.1
+type: update
+name: 'AWS CLI Tools'
+homepage: https://github.com/layershift/jps-aws-cli-tools
+id: 'aws-cli-tools'
+description:
+  short: Installs AWS CLI Tools
+categories:
+ - apps/others
+
+targetNodes:
+  nodeGroup: 'cp'
+
+onInstall: doInstall
+
+onAfterRedeployContainer [nodeGroup:cp]:
+  - forEach(event.response.responses):
+      deployRPM:
+        nodeId: ${@i.nodeid}
+onAfterRedeployContainer [nodeGroup:bl]:
+  - forEach(event.response.responses):
+      deployRPM:
+        nodeId: ${@i.nodeid}
+onAfterRedeployContainer [nodegroup:sqldb]:
+  - forEach(event.response.responses):
+      deployRPM:
+        nodeId: ${@i.nodeid}
+onAfterScaleOut [nodeGroup:cp]:
+  - forEach(event.response.nodes):
+      deployRPM:
+        nodeId: ${@i.id}
+onAfterScaleOut [nodeGroup:bl]:
+  - forEach(event.response.nodes):
+      deployRPM:
+        nodeId: ${@i.id}
+onAfterScaleOut [nodeGroup:sqldb]:
+  - forEach(event.response.nodes):
+      deployRPM:
+        nodeId: ${@i.id}
+
+onUninstall: doUninstall
+
+actions:
+  doInstall:
+    - forEach(nodes.cp):
+        deployRPM:
+          nodeId: ${@i.id}
+  doUninstall:
+    - forEach(nodes.cp):
+        removeRPM:
+          nodeId: ${@i.id}
+
+  deployRPM:
+    user: root
+    cmd[${targetNodes.nodeGroup}]:
+        - rm -rf /root/aws*
+        - rm -rf /usr/local/aws-cli*
+        - rm -f /usr/local/bin/aws
+        - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/root/awscliv2.zip"
+        - unzip -u /root/awscliv2.zip -d /root
+        - /root/aws/install
+  removeRPM:
+    user: root
+    cmd[${targetNodes.nodeGroup}]:
+        - rm -rf /root/aws*
+        - rm -f /usr/local/bin/aws
+        - rm -rf /usr/local/aws-cli*
